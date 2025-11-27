@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Equipe Esports</title>
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        header { background-color: #333; color: white; padding: 1rem; text-align: center; }
+        nav { background-color: #444; padding: 0.5rem; }
+        nav a { color: white; margin: 0 1rem; text-decoration: none; }
+        section { padding: 2rem; margin: 1rem; background-color: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        form { display: flex; flex-direction: column; gap: 1rem; }
+        input, select, button { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #007bff; color: white; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        ul { list-style-type: none; padding: 0; }
+        li { padding: 0.5rem; border-bottom: 1px solid #eee; }
+        #calendar { max-width: 900px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Gerenciador de Equipe Esports</h1>
+        <p>Organize seu time para o sucesso!</p>
+    </header>
+    <nav>
+        <a href="#calendario">Calendário</a>
+        <a href="#presenca">Presença</a>
+        <a href="#scrims">Scrims</a>
+        <a href="#vods">VODs</a>
+        <a href="#checagem">Checagem Mental</a>
+        <a href="#temas">Temas Semanais</a>
+        <a href="#ambiente">Ambiente</a>
+    </nav>
+
+    <section id="calendario">
+        <h2>Calendário Semanal Organizado</h2>
+        <p>Adicione eventos como treinos, scrims ou reuniões.</p>
+        <div id="calendar"></div>
+        <form id="add-event-form">
+            <input type="text" id="event-title" placeholder="Título do evento" required>
+            <input type="datetime-local" id="event-date" required>
+            <button type="submit">Adicionar Evento</button>
+        </form>
+    </section>
+
+    <section id="presenca">
+        <h2>Confirmação de Presença (24h de Antecedência)</h2>
+        <p>Confirme sua presença para eventos marcados no calendário.</p>
+        <form id="attendance-form">
+            <select id="event-select" required>
+                <option value="">Selecione um evento</option>
+                <!-- Eventos serão carregados dinamicamente -->
+            </select>
+            <label><input type="radio" name="attendance" value="sim" required> Sim, vou participar</label>
+            <label><input type="radio" name="attendance" value="nao"> Não, não vou</label>
+            <button type="submit">Confirmar</button>
+        </form>
+        <ul id="attendance-list"></ul>
+    </section>
+
+    <section id="scrims">
+        <h2>Organizar Scrims com Outros Times</h2>
+        <p>Agende scrims e convide times.</p>
+        <form id="scrim-form">
+            <input type="text" id="scrim-opponent" placeholder="Nome do time adversário" required>
+            <input type="datetime-local" id="scrim-date" required>
+            <button type="submit">Agendar Scrim</button>
+        </form>
+        <ul id="scrim-list"></ul>
+    </section>
+
+    <section id="vods">
+        <h2>Separar VODs Importantes</h2>
+        <p>Adicione links de VODs categorizados.</p>
+        <form id="vod-form">
+            <input type="text" id="vod-title" placeholder="Título da VOD" required>
+            <select id="vod-category" required>
+                <option value="treino">Treino</option>
+                <option value="scrim">Scrim</option>
+                <option value="analise">Análise</option>
+            </select>
+            <input type="url" id="vod-link" placeholder="Link da VOD" required>
+            <button type="submit">Adicionar VOD</button>
+        </form>
+        <ul id="vod-list"></ul>
+    </section>
+
+    <section id="checagem">
+        <h2>Checar Mental e Comunicação do Time</h2>
+        <p>Feedback anônimo para melhorar o ambiente.</p>
+        <form id="feedback-form">
+            <textarea id="mental-feedback" placeholder="Como está o seu estado mental hoje?" rows="3" required></textarea>
+            <textarea id="comm-feedback" placeholder="Como está a comunicação do time?" rows="3" required></textarea>
+            <button type="submit">Enviar Feedback</button>
+        </form>
+        <ul id="feedback-list"></ul>
+    </section>
+
+    <section id="temas">
+        <h2>Escolher Temas Semanais</h2>
+        <p>Selecione um tema para focar esta semana.</p>
+        <form id="theme-form">
+            <select id="weekly-theme" required>
+                <option value="early-game">Early Game</option>
+                <option value="dragon-control">Dragon Control</option>
+                <option value="teamfight">Teamfight</option>
+                <option value="outro">Outro (especifique)</option>
+            </select>
+            <input type="text" id="custom-theme" placeholder="Especifique se 'Outro'" style="display:none;">
+            <button type="submit">Definir Tema</button>
+        </form>
+        <p id="current-theme">Tema atual: Nenhum definido.</p>
+    </section>
+
+    <section id="ambiente">
+        <h2>Criar Ambiente Sem Tilt, Sem Culpa, Só Aprendizado</h2>
+        <p>Regras para manter um ambiente positivo:</p>
+        <ul>
+            <li>Foque no aprendizado, não em culpar erros.</li>
+            <li>Evite tilt: respire fundo e analise calmamente.</li>
+            <li>Celebre vitórias pequenas e aprenda com derrotas.</li>
+            <li>Comunique-se com respeito e positividade.</li>
+            <li>Use feedbacks para crescer, não para criticar.</li>
+        </ul>
+        <p>Mantenha o foco no coletivo e no progresso!</p>
+    </section>
+
+    <script>
+        // Calendário com FullCalendar
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                events: [] // Eventos serão adicionados dinamicamente
+            });
+            calendar.render();
+
+            // Adicionar evento ao calendário
+            document.getElementById('add-event-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const title = document.getElementById('event-title').value;
+                const date = document.getElementById('event-date').value;
+                calendar.addEvent({ title, start: date });
+                this.reset();
+            });
+
+            // Presença
+            const attendanceList = document.getElementById('attendance-list');
+            document.getElementById('attendance-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const event = document.getElementById('event-select').value;
+                const attendance = document.querySelector('input[name="attendance"]:checked').value;
+                const li = document.createElement('li');
+                li.textContent = `${event}: ${attendance}`;
+                attendanceList.appendChild(li);
+                this.reset();
+            });
+
+            // Scrims
+            const scrimList = document.getElementById('scrim-list');
+            document.getElementById('scrim-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const opponent = document.getElementById('scrim-opponent').value;
+                const date = document.getElementById('scrim-date').value;
+                const li = document.createElement('li');
+                li.textContent = `Scrim com ${opponent} em ${new Date(date).toLocaleString()}`;
+                scrimList.appendChild(li);
+                this.reset();
+            });
+
+            // VODs
+            const vodList = document.getElementById('vod-list');
+            document.getElementById('vod-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const title = document.getElementById('vod-title').value;
+                const category = document.getElementById('vod-category').value;
+                const link = document.getElementById('vod-link').value;
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${title}</strong> (${category}): <a href="${link}" target="_blank">${link}</a>`;
+                vodList.appendChild(li);
+                this.reset();
+            });
+
+            // Feedback
+            const feedbackList = document.getElementById('feedback-list');
+            document.getElementById('feedback-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const mental = document.getElementById('mental-feedback').value;
+                const comm = document.getElementById('comm-feedback').value;
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>Mental:</strong> ${mental}<br><strong>Comunicação:</strong> ${comm}`;
+                feedbackList.appendChild(li);
+                this.reset();
+            });
+
+            // Temas
+            document.getElementById('weekly-theme').addEventListener('change', function() {
+                const custom = document.getElementById('custom-theme');
+                custom.style.display = this.value === 'outro' ? 'block' : 'none';
+            });
+            document.getElementById('theme-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                let theme = document.getElementById('weekly-theme').value;
+                if (theme === 'outro') theme = document.getElementById('custom-theme').value;
+                document.getElementById('current-theme').textContent = `Tema atual: ${theme}`;
+                this.reset();
+            });
+        });
+    </script>
+</body>
+</html>

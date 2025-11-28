@@ -1,319 +1,294 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Equipe Esports</title>
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-        header { background-color: #333; color: white; padding: 1rem; text-align: center; }
-        nav { background-color: #444; padding: 0.5rem; }
-        nav a { color: white; margin: 0 1rem; text-decoration: none; }
-        section { padding: 2rem; margin: 1rem; background-color: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { color: #333; }
-        form { display: flex; flex-direction: column; gap: 1rem; }
-        input, select, button { padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
-        button { background-color: #007bff; color: white; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        ul { list-style-type: none; padding: 0; }
-        li { padding: 0.5rem; border-bottom: 1px solid #eee; }
-        #calendar { max-width: 900px; margin: 0 auto; }
-    </style>
+<meta charset="UTF-8" />
+<title>Gerenciamento de Treinos - LoL</title>
+
+<!-- FULLCALENDAR - versão estável -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+<style>
+/* ===== THEME & LAYOUT ===== */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: white;
+    background-image: url("https://i.imgur.com/VRfZp3v.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(3px);
+    z-index: -1;
+}
+.container {
+    max-width: 980px;
+    margin: 30px auto;
+    padding: 20px;
+}
+.box {
+    background: rgba(20,20,20,0.9);
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+input, select, button {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+    border-radius: 6px;
+    border: none;
+    font-size: 14px;
+}
+input, select { background: #2b2b2b; color: white; }
+button { background: #0b74d1; color: white; font-weight: 700; cursor: pointer; }
+button:hover { background: #0d86ff; transition: .15s; }
+.hidden { display: none; }
+
+/* FullCalendar tweaks */
+.fc .fc-toolbar-title { color: #fff !important; font-size: 20px; }
+.fc .fc-button { background: rgba(30,30,30,0.9) !important; color: #fff !important; border: none !important; }
+.fc .fc-button:hover { background: rgba(50,50,50,0.95) !important; }
+.fc .fc-daygrid-day { background: rgba(0,0,0,0.25); border-radius: 6px; }
+</style>
 </head>
 <body>
-    <header>
-        <h1>Gerenciador de Equipe Esports</h1>
-        <p>Organize seu time para o sucesso!</p>
-    </header>
-    <nav>
-        <a href="#calendario">Calendário</a>
-        <a href="#presenca">Presença</a>
-        <a href="#scrims">Scrims</a>
-        <a href="#vods">VODs</a>
-        <a href="#checagem">Checagem Mental</a>
-        <a href="#temas">Temas Semanais</a>
-        <a href="#ambiente">Ambiente</a>
-    </nav>
+<div class="container">
 
-    <!-- CALENDÁRIO -->
-    <section id="calendario">
-        <h2>Calendário Semanal Organizado</h2>
-        <p>Adicione eventos como treinos, scrims ou reuniões.</p>
-        <div id="calendar"></div>
-        <form id="add-event-form">
-            <input type="text" id="event-title" placeholder="Título do evento" required>
-            <input type="datetime-local" id="event-date" required>
-            <button type="submit">Adicionar Evento</button>
-        </form>
-    </section>
+    <!-- LOGIN -->
+    <div id="login-box" class="box">
+        <h2>Login</h2>
+        <p>Digite seu nickname</p>
+        <input id="login-name" placeholder="Ex: Pedr0zin" />
+        <button id="login-btn">Entrar</button>
+    </div>
 
-    <!-- PRESENÇA -->
-    <section id="presenca">
-        <h2>Confirmação de Presença (24h de Antecedência)</h2>
-        <p>Confirme sua presença para eventos marcados no calendário.</p>
-        <form id="attendance-form">
-            <select id="event-select" required>
-                <option value="">Selecione um evento</option>
-            </select>
-            <label><input type="radio" name="attendance" value="sim" required> Sim, vou participar</label>
-            <label><input type="radio" name="attendance" value="nao"> Não, não vou</label>
-            <button type="submit">Confirmar</button>
-        </form>
-        <ul id="attendance-list"></ul>
-    </section>
+    <!-- APP -->
+    <div id="main" class="hidden">
+        <h2>Bem-vindo, <span id="player-name"></span>!</h2>
 
-    <!-- SCRIMS -->
-    <section id="scrims">
-        <h2>Organizar Scrims com Outros Times</h2>
-        <p>Agende scrims e convide times.</p>
-        <form id="scrim-form">
-            <input type="text" id="scrim-opponent" placeholder="Nome do time adversário" required>
-            <input type="datetime-local" id="scrim-date" required>
-            <button type="submit">Agendar Scrim</button>
-        </form>
-        <ul id="scrim-list"></ul>
-    </section>
+        <!-- Calendário -->
+        <div id="calendar" class="box"></div>
 
-    <!-- VODS -->
-    <section id="vods">
-        <h2>Separar VODs Importantes</h2>
-        <p>Adicione links de VODs categorizados.</p>
-        <form id="vod-form">
-            <input type="text" id="vod-title" placeholder="Título da VOD" required>
-            <select id="vod-category" required>
-                <option value="treino">Treino</option>
-                <option value="scrim">Scrim</option>
-                <option value="analise">Análise</option>
-            </select>
-            <input type="url" id="vod-link" placeholder="Link da VOD" required>
-            <button type="submit">Adicionar VOD</button>
-        </form>
-        <ul id="vod-list"></ul>
-    </section>
+        <!-- Criar Evento -->
+        <div class="box">
+            <h3>Criar Evento</h3>
+            <input id="event-title" placeholder="Nome do evento" />
+            <input id="event-date" type="datetime-local" />
+            <button id="add-event-btn">Adicionar Evento</button>
+        </div>
 
-    <!-- FEEDBACK -->
-    <section id="checagem">
-        <h2>Checar Mental e Comunicação do Time</h2>
-        <p>Feedback anônimo para melhorar o ambiente.</p>
-        <form id="feedback-form">
-            <textarea id="mental-feedback" placeholder="Como está o seu estado mental hoje?" rows="3" required></textarea>
-            <textarea id="comm-feedback" placeholder="Como está a comunicação do time?" rows="3" required></textarea>
-            <button type="submit">Enviar Feedback</button>
-        </form>
-        <ul id="feedback-list"></ul>
-    </section>
+        <!-- NOVA CAIXA DE REMOVER EVENTO (PEDIDO POR VOCÊ) -->
+        <div class="box">
+            <h3>Remover Evento (Selecionar)</h3>
+            <select id="remove-event-select"></select>
+            <button id="remove-event-btn">Remover Evento Selecionado</button>
+        </div>
 
-    <!-- TEMAS SEMANAIS -->
-    <section id="temas">
-        <h2>Escolher Temas Semanais</h2>
-        <p>Selecione um tema para focar esta semana.</p>
-        <form id="theme-form">
-            <select id="weekly-theme" required>
-                <option value="early-game">Early Game</option>
-                <option value="dragon-control">Dragon Control</option>
-                <option value="teamfight">Teamfight</option>
-                <option value="outro">Outro (especifique)</option>
-            </select>
-            <input type="text" id="custom-theme" placeholder="Especifique se 'Outro'" style="display:none;">
-            <button type="submit">Definir Tema</button>
-        </form>
-        <p id="current-theme">Tema atual: Nenhum definido.</p>
-    </section>
+        <!-- Presença -->
+        <div class="box">
+            <h3>Confirmar Presença</h3>
+            <select id="presence-event-select"></select>
+            <button id="confirm-presence-btn">Confirmar Presença</button>
 
-    <!-- AMBIENTE -->
-    <section id="ambiente">
-        <h2>Criar Ambiente Sem Tilt, Sem Culpa, Só Aprendizado</h2>
-        <p>Regras para manter um ambiente positivo:</p>
-        <ul>
-            <li>Foque no aprendizado, não em culpar erros.</li>
-            <li>Evite tilt: respire fundo e analise calmamente.</li>
-            <li>Celebre vitórias pequenas e aprenda com derrotas.</li>
-            <li>Comunique-se com respeito e positividade.</li>
-            <li>Use feedbacks para crescer, não para criticar.</li>
-        </ul>
-        <p>Mantenha o foco no coletivo e no progresso!</p>
-    </section>
+            <h4 style="margin-top:14px">Confirmações</h4>
+            <ul id="presence-list" style="padding-left:18px"></ul>
+        </div>
+    </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-            // CARREGAR DO LOCALSTORAGE
-            const savedEvents = JSON.parse(localStorage.getItem("events")) || [];
-            const savedScrims = JSON.parse(localStorage.getItem("scrims")) || [];
-            const savedVods = JSON.parse(localStorage.getItem("vods")) || [];
-            const savedFeedback = JSON.parse(localStorage.getItem("feedback")) || [];
-            const savedAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
-            const savedTheme = localStorage.getItem("theme") || "Nenhum definido";
+    /* ==================== ELEMENTOS ==================== */
+    const loginBox = document.getElementById('login-box');
+    const mainBox = document.getElementById('main');
+    const loginBtn = document.getElementById('login-btn');
+    const loginInput = document.getElementById('login-name');
+    const playerNameSpan = document.getElementById('player-name');
 
-            // FULLCALENDAR
-            const calendarEl = document.getElementById('calendar');
-            const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'timeGridWeek',
-                events: savedEvents
-            });
-            calendar.render();
+    const addEventBtn = document.getElementById('add-event-btn');
+    const eventTitleInput = document.getElementById('event-title');
+    const eventDateInput = document.getElementById('event-date');
 
-            // CARREGAR EVENTOS NO SELECT DE PRESENÇA
-            function updateEventSelect() {
-                const select = document.getElementById("event-select");
-                select.innerHTML = `<option value="">Selecione um evento</option>`;
-                savedEvents.forEach(e => {
-                    const op = document.createElement("option");
-                    op.value = e.title;
-                    op.textContent = e.title + " (" + e.start + ")";
-                    select.appendChild(op);
-                });
-            }
-            updateEventSelect();
+    const presenceSelect = document.getElementById('presence-event-select');
+    const confirmPresenceBtn = document.getElementById('confirm-presence-btn');
+    const presenceList = document.getElementById('presence-list');
 
-            // ------- EVENTO -------
-            document.getElementById('add-event-form').addEventListener('submit', function(e) {
-                e.preventDefault();
+    const removeSelect = document.getElementById('remove-event-select');
+    const removeBtn = document.getElementById('remove-event-btn');
 
-                const title = document.getElementById('event-title').value;
-                const date = document.getElementById('event-date').value;
+    const calendarEl = document.getElementById('calendar');
 
-                const eventObj = { title, start: date };
-                savedEvents.push(eventObj);
+    let calendar = null;
+    let eventList = JSON.parse(localStorage.getItem('lol_events') || '[]');
+    let presenceData = JSON.parse(localStorage.getItem('lol_presence') || '{}');
 
-                localStorage.setItem("events", JSON.stringify(savedEvents));
+    /* ==================== LOGIN ==================== */
+    function login() {
+        const name = loginInput.value.trim();
+        if (!name) return alert('Digite um nickname!');
+        localStorage.setItem('lol_logged_user', name);
+        loadUser();
+    }
 
-                calendar.addEvent(eventObj);
-                updateEventSelect();
+    loginBtn.addEventListener('click', login);
+    loginInput.addEventListener('keyup', e => { if (e.key === 'Enter') login(); });
 
-                this.reset();
-            });
+    function loadUser() {
+        const user = localStorage.getItem('lol_logged_user');
+        if (!user) {
+            loginBox.classList.remove('hidden');
+            mainBox.classList.add('hidden');
+            return;
+        }
 
-            // ------- PRESENÇA -------
-            const attendanceList = document.getElementById('attendance-list');
+        playerNameSpan.innerText = user;
+        loginBox.classList.add('hidden');
+        mainBox.classList.remove('hidden');
 
-            function loadAttendance() {
-                attendanceList.innerHTML = "";
-                savedAttendance.forEach(a => {
-                    const li = document.createElement("li");
-                    li.textContent = `${a.event}: ${a.value}`;
-                    attendanceList.appendChild(li);
-                });
-            }
-            loadAttendance();
+        setTimeout(() => {
+            initCalendar();
+            refreshUI();
+        }, 100);
+    }
 
-            document.getElementById('attendance-form').addEventListener('submit', function(e) {
-                e.preventDefault();
+    /* ==================== CALENDÁRIO ==================== */
+    function initCalendar() {
+        if (calendar) return;
 
-                const event = document.getElementById('event-select').value;
-                const attendance = document.querySelector('input[name="attendance"]:checked').value;
-
-                savedAttendance.push({ event, value: attendance });
-                localStorage.setItem("attendance", JSON.stringify(savedAttendance));
-
-                loadAttendance();
-                this.reset();
-            });
-
-            // ------- SCRIMS -------
-            const scrimList = document.getElementById('scrim-list');
-
-            function loadScrims() {
-                scrimList.innerHTML = "";
-                savedScrims.forEach(s => {
-                    const li = document.createElement("li");
-                    li.textContent = s;
-                    scrimList.appendChild(li);
-                });
-            }
-            loadScrims();
-
-            document.getElementById('scrim-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const opponent = document.getElementById('scrim-opponent').value;
-                const date = new Date(document.getElementById('scrim-date').value).toLocaleString();
-
-                const str = `Scrim com ${opponent} em ${date}`;
-                savedScrims.push(str);
-                localStorage.setItem("scrims", JSON.stringify(savedScrims));
-
-                loadScrims();
-                this.reset();
-            });
-
-            // ------- VODS -------
-            const vodList = document.getElementById('vod-list');
-
-            function loadVods() {
-                vodList.innerHTML = "";
-                savedVods.forEach(v => {
-                    const li = document.createElement("li");
-                    li.innerHTML = `<strong>${v.title}</strong> (${v.category}): <a href="${v.link}" target="_blank">${v.link}</a>`;
-                    vodList.appendChild(li);
-                });
-            }
-            loadVods();
-
-            document.getElementById('vod-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const title = document.getElementById('vod-title').value;
-                const category = document.getElementById('vod-category').value;
-                const link = document.getElementById('vod-link').value;
-
-                savedVods.push({ title, category, link });
-                localStorage.setItem("vods", JSON.stringify(savedVods));
-
-                loadVods();
-                this.reset();
-            });
-
-            // ------- FEEDBACK -------
-            const feedbackList = document.getElementById('feedback-list');
-
-            function loadFeedback() {
-                feedbackList.innerHTML = "";
-                savedFeedback.forEach(f => {
-                    const li = document.createElement("li");
-                    li.innerHTML = `<strong>Mental:</strong> ${f.mental}<br><strong>Comunicação:</strong> ${f.comm}`;
-                    feedbackList.appendChild(li);
-                });
-            }
-            loadFeedback();
-
-            document.getElementById('feedback-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const mental = document.getElementById('mental-feedback').value;
-                const comm = document.getElementById('comm-feedback').value;
-
-                savedFeedback.push({ mental, comm });
-                localStorage.setItem("feedback", JSON.stringify(savedFeedback));
-
-                loadFeedback();
-                this.reset();
-            });
-
-            // ------- TEMA SEMANAL -------
-            document.getElementById("current-theme").textContent = "Tema atual: " + savedTheme;
-
-            document.getElementById('weekly-theme').addEventListener('change', function() {
-                const custom = document.getElementById('custom-theme');
-                custom.style.display = this.value === 'outro' ? 'block' : 'none';
-            });
-
-            document.getElementById('theme-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                let theme = document.getElementById('weekly-theme').value;
-                if (theme === 'outro')
-                    theme = document.getElementById('custom-theme').value;
-
-                localStorage.setItem("theme", theme);
-                document.getElementById("current-theme").textContent = "Tema atual: " + theme;
-
-                this.reset();
-            });
-
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+            events: eventList
         });
-    </script>
+
+        calendar.render();
+    }
+
+    /* ==================== SELECT DE EVENTOS ==================== */
+    function updateEventSelectors() {
+        presenceSelect.innerHTML = "";
+        removeSelect.innerHTML = "";
+
+        if (!eventList.length) {
+            const opt1 = document.createElement("option");
+            opt1.textContent = "Nenhum evento";
+            presenceSelect.appendChild(opt1);
+
+            const opt2 = document.createElement("option");
+            opt2.textContent = "Nenhum evento";
+            removeSelect.appendChild(opt2);
+            return;
+        }
+
+        eventList.forEach(evt => {
+            const text = `${evt.title} — ${new Date(evt.start).toLocaleString()}`;
+
+            const opt1 = document.createElement("option");
+            opt1.value = evt.start;
+            opt1.textContent = text;
+            presenceSelect.appendChild(opt1);
+
+            const opt2 = document.createElement("option");
+            opt2.value = evt.start;
+            opt2.textContent = text;
+            removeSelect.appendChild(opt2);
+        });
+
+        loadPresenceList();
+    }
+
+    /* ==================== ADICIONAR EVENTO ==================== */
+    addEventBtn.addEventListener('click', () => {
+        const title = eventTitleInput.value.trim();
+        const date = eventDateInput.value;
+
+        if (!title || !date) return alert("Preencha tudo!");
+
+        const newEvent = { title, start: date };
+        eventList.push(newEvent);
+
+        localStorage.setItem('lol_events', JSON.stringify(eventList));
+
+        calendar.addEvent(newEvent);
+
+        eventTitleInput.value = "";
+        eventDateInput.value = "";
+
+        updateEventSelectors();
+        alert("Evento adicionado!");
+    });
+
+    /* ==================== REMOVER EVENTO (CAIXA NOVA) ==================== */
+    removeBtn.addEventListener('click', () => {
+        const key = removeSelect.value;
+        const index = eventList.findIndex(e => e.start === key);
+
+        if (index === -1) return alert("Selecione um evento válido!");
+
+        eventList.splice(index, 1);
+        delete presenceData[key];
+
+        localStorage.setItem('lol_events', JSON.stringify(eventList));
+        localStorage.setItem('lol_presence', JSON.stringify(presenceData));
+
+        calendar.removeAllEvents();
+        eventList.forEach(e => calendar.addEvent(e));
+
+        updateEventSelectors();
+        alert("Evento removido!");
+    });
+
+    /* ==================== PRESENÇA ==================== */
+    confirmPresenceBtn.addEventListener('click', () => {
+        const user = localStorage.getItem('lol_logged_user');
+        if (!user) return alert("Faça login!");
+
+        const key = presenceSelect.value;
+
+        presenceData[key] = presenceData[key] || [];
+
+        if (presenceData[key].includes(user))
+            return alert("Você já confirmou!");
+
+        presenceData[key].push(user);
+
+        localStorage.setItem('lol_presence', JSON.stringify(presenceData));
+
+        loadPresenceList();
+    });
+
+    function loadPresenceList() {
+        presenceList.innerHTML = "";
+        const key = presenceSelect.value;
+
+        if (!presenceData[key]) return;
+
+        presenceData[key].forEach(p => {
+            const li = document.createElement("li");
+            li.textContent = p;
+            presenceList.appendChild(li);
+        });
+    }
+
+    /* ==================== REFRESH ==================== */
+    function refreshUI() {
+        updateEventSelectors();
+        loadPresenceList();
+    }
+
+    loadUser();
+});
+</script>
 </body>
 </html>

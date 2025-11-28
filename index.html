@@ -37,6 +37,7 @@
         <a href="#ambiente">Ambiente</a>
     </nav>
 
+    <!-- CALENDÁRIO -->
     <section id="calendario">
         <h2>Calendário Semanal Organizado</h2>
         <p>Adicione eventos como treinos, scrims ou reuniões.</p>
@@ -48,13 +49,13 @@
         </form>
     </section>
 
+    <!-- PRESENÇA -->
     <section id="presenca">
         <h2>Confirmação de Presença (24h de Antecedência)</h2>
         <p>Confirme sua presença para eventos marcados no calendário.</p>
         <form id="attendance-form">
             <select id="event-select" required>
                 <option value="">Selecione um evento</option>
-                <!-- Eventos serão carregados dinamicamente -->
             </select>
             <label><input type="radio" name="attendance" value="sim" required> Sim, vou participar</label>
             <label><input type="radio" name="attendance" value="nao"> Não, não vou</label>
@@ -63,6 +64,7 @@
         <ul id="attendance-list"></ul>
     </section>
 
+    <!-- SCRIMS -->
     <section id="scrims">
         <h2>Organizar Scrims com Outros Times</h2>
         <p>Agende scrims e convide times.</p>
@@ -74,6 +76,7 @@
         <ul id="scrim-list"></ul>
     </section>
 
+    <!-- VODS -->
     <section id="vods">
         <h2>Separar VODs Importantes</h2>
         <p>Adicione links de VODs categorizados.</p>
@@ -90,6 +93,7 @@
         <ul id="vod-list"></ul>
     </section>
 
+    <!-- FEEDBACK -->
     <section id="checagem">
         <h2>Checar Mental e Comunicação do Time</h2>
         <p>Feedback anônimo para melhorar o ambiente.</p>
@@ -101,6 +105,7 @@
         <ul id="feedback-list"></ul>
     </section>
 
+    <!-- TEMAS SEMANAIS -->
     <section id="temas">
         <h2>Escolher Temas Semanais</h2>
         <p>Selecione um tema para focar esta semana.</p>
@@ -117,6 +122,7 @@
         <p id="current-theme">Tema atual: Nenhum definido.</p>
     </section>
 
+    <!-- AMBIENTE -->
     <section id="ambiente">
         <h2>Criar Ambiente Sem Tilt, Sem Culpa, Só Aprendizado</h2>
         <p>Regras para manter um ambiente positivo:</p>
@@ -131,85 +137,182 @@
     </section>
 
     <script>
-        // Calendário com FullCalendar
         document.addEventListener('DOMContentLoaded', function() {
+
+            // CARREGAR DO LOCALSTORAGE
+            const savedEvents = JSON.parse(localStorage.getItem("events")) || [];
+            const savedScrims = JSON.parse(localStorage.getItem("scrims")) || [];
+            const savedVods = JSON.parse(localStorage.getItem("vods")) || [];
+            const savedFeedback = JSON.parse(localStorage.getItem("feedback")) || [];
+            const savedAttendance = JSON.parse(localStorage.getItem("attendance")) || [];
+            const savedTheme = localStorage.getItem("theme") || "Nenhum definido";
+
+            // FULLCALENDAR
             const calendarEl = document.getElementById('calendar');
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'timeGridWeek',
-                events: [] // Eventos serão adicionados dinamicamente
+                events: savedEvents
             });
             calendar.render();
 
-            // Adicionar evento ao calendário
+            // CARREGAR EVENTOS NO SELECT DE PRESENÇA
+            function updateEventSelect() {
+                const select = document.getElementById("event-select");
+                select.innerHTML = `<option value="">Selecione um evento</option>`;
+                savedEvents.forEach(e => {
+                    const op = document.createElement("option");
+                    op.value = e.title;
+                    op.textContent = e.title + " (" + e.start + ")";
+                    select.appendChild(op);
+                });
+            }
+            updateEventSelect();
+
+            // ------- EVENTO -------
             document.getElementById('add-event-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 const title = document.getElementById('event-title').value;
                 const date = document.getElementById('event-date').value;
-                calendar.addEvent({ title, start: date });
+
+                const eventObj = { title, start: date };
+                savedEvents.push(eventObj);
+
+                localStorage.setItem("events", JSON.stringify(savedEvents));
+
+                calendar.addEvent(eventObj);
+                updateEventSelect();
+
                 this.reset();
             });
 
-            // Presença
+            // ------- PRESENÇA -------
             const attendanceList = document.getElementById('attendance-list');
+
+            function loadAttendance() {
+                attendanceList.innerHTML = "";
+                savedAttendance.forEach(a => {
+                    const li = document.createElement("li");
+                    li.textContent = `${a.event}: ${a.value}`;
+                    attendanceList.appendChild(li);
+                });
+            }
+            loadAttendance();
+
             document.getElementById('attendance-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 const event = document.getElementById('event-select').value;
                 const attendance = document.querySelector('input[name="attendance"]:checked').value;
-                const li = document.createElement('li');
-                li.textContent = `${event}: ${attendance}`;
-                attendanceList.appendChild(li);
+
+                savedAttendance.push({ event, value: attendance });
+                localStorage.setItem("attendance", JSON.stringify(savedAttendance));
+
+                loadAttendance();
                 this.reset();
             });
 
-            // Scrims
+            // ------- SCRIMS -------
             const scrimList = document.getElementById('scrim-list');
+
+            function loadScrims() {
+                scrimList.innerHTML = "";
+                savedScrims.forEach(s => {
+                    const li = document.createElement("li");
+                    li.textContent = s;
+                    scrimList.appendChild(li);
+                });
+            }
+            loadScrims();
+
             document.getElementById('scrim-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 const opponent = document.getElementById('scrim-opponent').value;
-                const date = document.getElementById('scrim-date').value;
-                const li = document.createElement('li');
-                li.textContent = `Scrim com ${opponent} em ${new Date(date).toLocaleString()}`;
-                scrimList.appendChild(li);
+                const date = new Date(document.getElementById('scrim-date').value).toLocaleString();
+
+                const str = `Scrim com ${opponent} em ${date}`;
+                savedScrims.push(str);
+                localStorage.setItem("scrims", JSON.stringify(savedScrims));
+
+                loadScrims();
                 this.reset();
             });
 
-            // VODs
+            // ------- VODS -------
             const vodList = document.getElementById('vod-list');
+
+            function loadVods() {
+                vodList.innerHTML = "";
+                savedVods.forEach(v => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<strong>${v.title}</strong> (${v.category}): <a href="${v.link}" target="_blank">${v.link}</a>`;
+                    vodList.appendChild(li);
+                });
+            }
+            loadVods();
+
             document.getElementById('vod-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 const title = document.getElementById('vod-title').value;
                 const category = document.getElementById('vod-category').value;
                 const link = document.getElementById('vod-link').value;
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>${title}</strong> (${category}): <a href="${link}" target="_blank">${link}</a>`;
-                vodList.appendChild(li);
+
+                savedVods.push({ title, category, link });
+                localStorage.setItem("vods", JSON.stringify(savedVods));
+
+                loadVods();
                 this.reset();
             });
 
-            // Feedback
+            // ------- FEEDBACK -------
             const feedbackList = document.getElementById('feedback-list');
+
+            function loadFeedback() {
+                feedbackList.innerHTML = "";
+                savedFeedback.forEach(f => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<strong>Mental:</strong> ${f.mental}<br><strong>Comunicação:</strong> ${f.comm}`;
+                    feedbackList.appendChild(li);
+                });
+            }
+            loadFeedback();
+
             document.getElementById('feedback-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 const mental = document.getElementById('mental-feedback').value;
                 const comm = document.getElementById('comm-feedback').value;
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>Mental:</strong> ${mental}<br><strong>Comunicação:</strong> ${comm}`;
-                feedbackList.appendChild(li);
+
+                savedFeedback.push({ mental, comm });
+                localStorage.setItem("feedback", JSON.stringify(savedFeedback));
+
+                loadFeedback();
                 this.reset();
             });
 
-            // Temas
+            // ------- TEMA SEMANAL -------
+            document.getElementById("current-theme").textContent = "Tema atual: " + savedTheme;
+
             document.getElementById('weekly-theme').addEventListener('change', function() {
                 const custom = document.getElementById('custom-theme');
                 custom.style.display = this.value === 'outro' ? 'block' : 'none';
             });
+
             document.getElementById('theme-form').addEventListener('submit', function(e) {
                 e.preventDefault();
+
                 let theme = document.getElementById('weekly-theme').value;
-                if (theme === 'outro') theme = document.getElementById('custom-theme').value;
-                document.getElementById('current-theme').textContent = `Tema atual: ${theme}`;
+                if (theme === 'outro')
+                    theme = document.getElementById('custom-theme').value;
+
+                localStorage.setItem("theme", theme);
+                document.getElementById("current-theme").textContent = "Tema atual: " + theme;
+
                 this.reset();
             });
+
         });
     </script>
 </body>

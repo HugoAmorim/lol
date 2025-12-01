@@ -167,11 +167,11 @@ async function loadEvents() {
         .from("events")
         .select("*")
         .order("date");
+if (error) {
+    console.error(error);
+    alert("Erro ao criar evento: " + error.message);
+}
 
-    if (error) {
-        console.error(error);
-        return alert("Erro ao carregar eventos");
-    }
 
     eventsLoaded = data;
 

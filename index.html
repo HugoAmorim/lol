@@ -4,9 +4,12 @@
 <meta charset="UTF-8" />
 <title>Gerenciamento de Treinos - LoL</title>
 
-<!-- FULLCALENDAR - versão estável -->
+<!-- FULLCALENDAR -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 /* ===== THEME & LAYOUT ===== */
@@ -53,12 +56,6 @@ input, select { background: #2b2b2b; color: white; }
 button { background: #0b74d1; color: white; font-weight: 700; cursor: pointer; }
 button:hover { background: #0d86ff; transition: .15s; }
 .hidden { display: none; }
-
-/* FullCalendar tweaks */
-.fc .fc-toolbar-title { color: #fff !important; font-size: 20px; }
-.fc .fc-button { background: rgba(30,30,30,0.9) !important; color: #fff !important; border: none !important; }
-.fc .fc-button:hover { background: rgba(50,50,50,0.95) !important; }
-.fc .fc-daygrid-day { background: rgba(0,0,0,0.25); border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -87,9 +84,9 @@ button:hover { background: #0d86ff; transition: .15s; }
             <button id="add-event-btn">Adicionar Evento</button>
         </div>
 
-        <!-- NOVA CAIXA DE REMOVER EVENTO (PEDIDO POR VOCÊ) -->
+        <!-- Remover Evento -->
         <div class="box">
-            <h3>Remover Evento (Selecionar)</h3>
+            <h3>Remover Evento</h3>
             <select id="remove-event-select"></select>
             <button id="remove-event-btn">Remover Evento Selecionado</button>
         </div>
@@ -107,188 +104,201 @@ button:hover { background: #0d86ff; transition: .15s; }
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+/* ================ CONFIG SUPABASE ================ */
+const supabase = supabase.createClient(
+  "https://omvhpfutnbrjktcdsnqzm.supabase.co",
+  "sb_publishable_YxSf008TK6n8vUKBKmv-pQ_qCdVIPWP"
+);
 
-    /* ==================== ELEMENTOS ==================== */
-    const loginBox = document.getElementById('login-box');
-    const mainBox = document.getElementById('main');
-    const loginBtn = document.getElementById('login-btn');
-    const loginInput = document.getElementById('login-name');
-    const playerNameSpan = document.getElementById('player-name');
+/* ================ ELEMENTOS HTML ================ */
+const loginBox = document.getElementById('login-box');
+const mainBox = document.getElementById('main');
+const loginBtn = document.getElementById('login-btn');
+const loginInput = document.getElementById('login-name');
+const playerNameSpan = document.getElementById('player-name');
 
-    const addEventBtn = document.getElementById('add-event-btn');
-    const eventTitleInput = document.getElementById('event-title');
-    const eventDateInput = document.getElementById('event-date');
+const addEventBtn = document.getElementById('add-event-btn');
+const eventTitleInput = document.getElementById('event-title');
+const eventDateInput = document.getElementById('event-date');
 
-    const presenceSelect = document.getElementById('presence-event-select');
-    const confirmPresenceBtn = document.getElementById('confirm-presence-btn');
-    const presenceList = document.getElementById('presence-list');
+const presenceSelect = document.getElementById('presence-event-select');
+const confirmPresenceBtn = document.getElementById('confirm-presence-btn');
+const presenceList = document.getElementById('presence-list');
 
-    const removeSelect = document.getElementById('remove-event-select');
-    const removeBtn = document.getElementById('remove-event-btn');
+const removeSelect = document.getElementById('remove-event-select');
+const removeBtn = document.getElementById('remove-event-btn');
 
-    const calendarEl = document.getElementById('calendar');
+const calendarEl = document.getElementById('calendar');
 
-    let calendar = null;
-    let eventList = JSON.parse(localStorage.getItem('lol_events') || '[]');
-    let presenceData = JSON.parse(localStorage.getItem('lol_presence') || '{}');
+let calendar = null;
+let currentUser = null;
+let eventsLoaded = [];
 
-    /* ==================== LOGIN ==================== */
-    function login() {
-        const name = loginInput.value.trim();
-        if (!name) return alert('Digite um nickname!');
-        localStorage.setItem('lol_logged_user', name);
-        loadUser();
-    }
+/* ================ LOGIN ================ */
+loginBtn.addEventListener('click', login);
+loginInput.addEventListener('keyup', e => { if (e.key === 'Enter') login(); });
 
-    loginBtn.addEventListener('click', login);
-    loginInput.addEventListener('keyup', e => { if (e.key === 'Enter') login(); });
+async function login() {
+    const name = loginInput.value.trim();
+    if (!name) return alert("Digite um nickname!");
 
-    function loadUser() {
-        const user = localStorage.getItem('lol_logged_user');
-        if (!user) {
-            loginBox.classList.remove('hidden');
-            mainBox.classList.add('hidden');
-            return;
-        }
-
-        playerNameSpan.innerText = user;
-        loginBox.classList.add('hidden');
-        mainBox.classList.remove('hidden');
-
-        setTimeout(() => {
-            initCalendar();
-            refreshUI();
-        }, 100);
-    }
-
-    /* ==================== CALENDÁRIO ==================== */
-    function initCalendar() {
-        if (calendar) return;
-
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            height: 'auto',
-            events: eventList
-        });
-
-        calendar.render();
-    }
-
-    /* ==================== SELECT DE EVENTOS ==================== */
-    function updateEventSelectors() {
-        presenceSelect.innerHTML = "";
-        removeSelect.innerHTML = "";
-
-        if (!eventList.length) {
-            const opt1 = document.createElement("option");
-            opt1.textContent = "Nenhum evento";
-            presenceSelect.appendChild(opt1);
-
-            const opt2 = document.createElement("option");
-            opt2.textContent = "Nenhum evento";
-            removeSelect.appendChild(opt2);
-            return;
-        }
-
-        eventList.forEach(evt => {
-            const text = `${evt.title} — ${new Date(evt.start).toLocaleString()}`;
-
-            const opt1 = document.createElement("option");
-            opt1.value = evt.start;
-            opt1.textContent = text;
-            presenceSelect.appendChild(opt1);
-
-            const opt2 = document.createElement("option");
-            opt2.value = evt.start;
-            opt2.textContent = text;
-            removeSelect.appendChild(opt2);
-        });
-
-        loadPresenceList();
-    }
-
-    /* ==================== ADICIONAR EVENTO ==================== */
-    addEventBtn.addEventListener('click', () => {
-        const title = eventTitleInput.value.trim();
-        const date = eventDateInput.value;
-
-        if (!title || !date) return alert("Preencha tudo!");
-
-        const newEvent = { title, start: date };
-        eventList.push(newEvent);
-
-        localStorage.setItem('lol_events', JSON.stringify(eventList));
-
-        calendar.addEvent(newEvent);
-
-        eventTitleInput.value = "";
-        eventDateInput.value = "";
-
-        updateEventSelectors();
-        alert("Evento adicionado!");
-    });
-
-    /* ==================== REMOVER EVENTO (CAIXA NOVA) ==================== */
-    removeBtn.addEventListener('click', () => {
-        const key = removeSelect.value;
-        const index = eventList.findIndex(e => e.start === key);
-
-        if (index === -1) return alert("Selecione um evento válido!");
-
-        eventList.splice(index, 1);
-        delete presenceData[key];
-
-        localStorage.setItem('lol_events', JSON.stringify(eventList));
-        localStorage.setItem('lol_presence', JSON.stringify(presenceData));
-
-        calendar.removeAllEvents();
-        eventList.forEach(e => calendar.addEvent(e));
-
-        updateEventSelectors();
-        alert("Evento removido!");
-    });
-
-    /* ==================== PRESENÇA ==================== */
-    confirmPresenceBtn.addEventListener('click', () => {
-        const user = localStorage.getItem('lol_logged_user');
-        if (!user) return alert("Faça login!");
-
-        const key = presenceSelect.value;
-
-        presenceData[key] = presenceData[key] || [];
-
-        if (presenceData[key].includes(user))
-            return alert("Você já confirmou!");
-
-        presenceData[key].push(user);
-
-        localStorage.setItem('lol_presence', JSON.stringify(presenceData));
-
-        loadPresenceList();
-    });
-
-    function loadPresenceList() {
-        presenceList.innerHTML = "";
-        const key = presenceSelect.value;
-
-        if (!presenceData[key]) return;
-
-        presenceData[key].forEach(p => {
-            const li = document.createElement("li");
-            li.textContent = p;
-            presenceList.appendChild(li);
-        });
-    }
-
-    /* ==================== REFRESH ==================== */
-    function refreshUI() {
-        updateEventSelectors();
-        loadPresenceList();
-    }
+    currentUser = name;
+    localStorage.setItem("lol_user", name);
 
     loadUser();
+}
+
+function loadUser() {
+    const saved = localStorage.getItem("lol_user");
+    if (!saved) return;
+
+    currentUser = saved;
+    playerNameSpan.innerText = saved;
+
+    loginBox.classList.add('hidden');
+    mainBox.classList.remove('hidden');
+
+    initCalendar();
+    loadEvents();
+}
+
+/* ================ CARREGAR EVENTOS ================ */
+async function loadEvents() {
+    const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .order("date");
+
+    if (error) return alert("Erro ao carregar eventos");
+
+    eventsLoaded = data;
+
+    calendar.removeAllEvents();
+    data.forEach(evt => {
+        calendar.addEvent({
+            id: evt.id,
+            title: evt.title,
+            start: evt.date
+        });
+    });
+
+    updateEventSelectors();
+}
+
+/* ================ CALENDÁRIO ================ */
+function initCalendar() {
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: "dayGridMonth",
+        height: "auto"
+    });
+    calendar.render();
+}
+
+/* ================ ADICIONAR EVENTO ================ */
+addEventBtn.addEventListener("click", async () => {
+    const title = eventTitleInput.value.trim();
+    const date = eventDateInput.value;
+
+    if (!title || !date) return alert("Preencha tudo!");
+
+    const { error } = await supabase
+        .from("events")
+        .insert([{ title, date }]);
+
+    if (error) return alert("Erro ao criar evento");
+
+    eventTitleInput.value = "";
+    eventDateInput.value = "";
+
+    loadEvents();
+    alert("Evento criado!");
 });
+
+/* ================ SELECTS DE EVENTO ================ */
+function updateEventSelectors() {
+    presenceSelect.innerHTML = "";
+    removeSelect.innerHTML = "";
+
+    if (eventsLoaded.length === 0) {
+        presenceSelect.innerHTML = "<option>Nenhum evento</option>";
+        removeSelect.innerHTML = "<option>Nenhum evento</option>";
+        return;
+    }
+
+    eventsLoaded.forEach(evt => {
+        const text = `${evt.title} — ${new Date(evt.date).toLocaleString()}`;
+
+        const opt1 = document.createElement("option");
+        opt1.value = evt.id;
+        opt1.textContent = text;
+        presenceSelect.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = evt.id;
+        opt2.textContent = text;
+        removeSelect.appendChild(opt2);
+    });
+
+    loadPresenceList();
+}
+
+/* ================ CONFIRMAR PRESENÇA ================ */
+confirmPresenceBtn.addEventListener("click", async () => {
+    const eventId = presenceSelect.value;
+
+    const { data: existing } = await supabase
+        .from("presences")
+        .select("*")
+        .eq("event_id", eventId)
+        .eq("name", currentUser);
+
+    if (existing.length > 0)
+        return alert("Você já confirmou presença!");
+
+    const { error } = await supabase
+        .from("presences")
+        .insert([{ event_id: eventId, name: currentUser }]);
+
+    if (error) return alert("Erro ao confirmar presença");
+
+    loadPresenceList();
+});
+
+/* ================ LISTAR PRESENÇAS ================ */
+async function loadPresenceList() {
+    presenceList.innerHTML = "";
+
+    const eventId = presenceSelect.value;
+
+    const { data, error } = await supabase
+        .from("presences")
+        .select("*")
+        .eq("event_id", eventId);
+
+    if (error) return;
+
+    data.forEach(p => {
+        const li = document.createElement("li");
+        li.textContent = p.name;
+        presenceList.appendChild(li);
+    });
+}
+
+/* ================ REMOVER EVENTO ================ */
+removeBtn.addEventListener("click", async () => {
+    const id = removeSelect.value;
+
+    if (!confirm("Tem certeza que deseja remover este evento?")) return;
+
+    await supabase.from("presences").delete().eq("event_id", id);
+    await supabase.from("events").delete().eq("id", id);
+
+    loadEvents();
+    alert("Evento removido!");
+});
+
+/* ================ INICIAR APP ================ */
+loadUser();
 </script>
 </body>
 </html>

@@ -1,5 +1,16 @@
 <!-- SUPABASE -->
 <script src="https://esm.sh/@supabase/supabase-js@2"></script>
+<!-- SUPABASE (VERSÃO CORRETA — FUNCIONA NO BROWSER) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
+<script>
+/* ================ CONFIG SUPABASE ================ */
+const supabaseUrl = "https://omhpfutnbrjkctdsnqzm.supabase.co";
+const supabaseKey =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taHBmdXRuYnJqa2N0ZHNucXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1OTc5MDIsImV4cCI6MjA4MDE3MzkwMn0.ivNsJ21QVegUSgdc4aw9dyV85QJuEq7--bpkcKj5zVI";
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+
 
 <script>
 /* ================ CONFIG SUPABASE ================ */

@@ -105,12 +105,11 @@ button:hover { background: #0d86ff; transition: .15s; }
 
 <script>
 /* ================ CONFIG SUPABASE ================ */
-const supabase = supabase.createClient(
-  "https://omvhpfutnbrjktcdsnqzm.supabase.co",
-  "sb_publishable_YxSf008TK6n8vUKBKmv-pQ_qCdVIPWP"
-);
+const supabaseUrl = "https://omvhpfutnbrjktcdsnqzm.supabase.co";
+const supabaseKey = "sb-publishable_key_aqui";  // coloque sua chave correta
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-/* ================ ELEMENTOS HTML ================ */
+/* HTML ELEMENTOS */
 const loginBox = document.getElementById('login-box');
 const mainBox = document.getElementById('main');
 const loginBtn = document.getElementById('login-btn');
@@ -134,11 +133,11 @@ let calendar = null;
 let currentUser = null;
 let eventsLoaded = [];
 
-/* ================ LOGIN ================ */
+/* LOGIN */
 loginBtn.addEventListener('click', login);
 loginInput.addEventListener('keyup', e => { if (e.key === 'Enter') login(); });
 
-async function login() {
+function login() {
     const name = loginInput.value.trim();
     if (!name) return alert("Digite um nickname!");
 
@@ -162,46 +161,46 @@ function loadUser() {
     loadEvents();
 }
 
-/* ================ CARREGAR EVENTOS ================ */
+/* CARREGAR EVENTOS */
 async function loadEvents() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("events")
         .select("*")
         .order("date");
 
-    if (error) return alert("Erro ao carregar eventos");
+    if (error) {
+        console.error(error);
+        return alert("Erro ao carregar eventos");
+    }
 
     eventsLoaded = data;
 
     calendar.removeAllEvents();
-    data.forEach(evt => {
-        calendar.addEvent({
-            id: evt.id,
-            title: evt.title,
-            start: evt.date
-        });
-    });
+    data.forEach(evt =>
+        calendar.addEvent({ id: evt.id, title: evt.title, start: evt.date })
+    );
 
     updateEventSelectors();
 }
 
-/* ================ CALENDÁRIO ================ */
+/* CALENDARIO */
 function initCalendar() {
+    if (calendar) return; // evita duplicar
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: "dayGridMonth",
-        height: "auto"
+        height: "auto",
     });
     calendar.render();
 }
 
-/* ================ ADICIONAR EVENTO ================ */
+/* ADICIONAR EVENTO */
 addEventBtn.addEventListener("click", async () => {
     const title = eventTitleInput.value.trim();
     const date = eventDateInput.value;
 
     if (!title || !date) return alert("Preencha tudo!");
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("events")
         .insert([{ title, date }]);
 
@@ -214,7 +213,7 @@ addEventBtn.addEventListener("click", async () => {
     alert("Evento criado!");
 });
 
-/* ================ SELECTS DE EVENTO ================ */
+/* SELECT DOS EVENTOS */
 function updateEventSelectors() {
     presenceSelect.innerHTML = "";
     removeSelect.innerHTML = "";
@@ -228,25 +227,18 @@ function updateEventSelectors() {
     eventsLoaded.forEach(evt => {
         const text = `${evt.title} — ${new Date(evt.date).toLocaleString()}`;
 
-        const opt1 = document.createElement("option");
-        opt1.value = evt.id;
-        opt1.textContent = text;
-        presenceSelect.appendChild(opt1);
-
-        const opt2 = document.createElement("option");
-        opt2.value = evt.id;
-        opt2.textContent = text;
-        removeSelect.appendChild(opt2);
+        presenceSelect.innerHTML += `<option value="${evt.id}">${text}</option>`;
+        removeSelect.innerHTML += `<option value="${evt.id}">${text}</option>`;
     });
 
     loadPresenceList();
 }
 
-/* ================ CONFIRMAR PRESENÇA ================ */
+/* CONFIRMAR PRESENÇA */
 confirmPresenceBtn.addEventListener("click", async () => {
     const eventId = presenceSelect.value;
 
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseClient
         .from("presences")
         .select("*")
         .eq("event_id", eventId)
@@ -255,7 +247,7 @@ confirmPresenceBtn.addEventListener("click", async () => {
     if (existing.length > 0)
         return alert("Você já confirmou presença!");
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from("presences")
         .insert([{ event_id: eventId, name: currentUser }]);
 
@@ -264,13 +256,13 @@ confirmPresenceBtn.addEventListener("click", async () => {
     loadPresenceList();
 });
 
-/* ================ LISTAR PRESENÇAS ================ */
+/* LISTAR PRESENÇA */
 async function loadPresenceList() {
     presenceList.innerHTML = "";
 
     const eventId = presenceSelect.value;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from("presences")
         .select("*")
         .eq("event_id", eventId);
@@ -284,20 +276,20 @@ async function loadPresenceList() {
     });
 }
 
-/* ================ REMOVER EVENTO ================ */
+/* REMOVER EVENTO */
 removeBtn.addEventListener("click", async () => {
     const id = removeSelect.value;
 
-    if (!confirm("Tem certeza que deseja remover este evento?")) return;
+    if (!confirm("Tem certeza?")) return;
 
-    await supabase.from("presences").delete().eq("event_id", id);
-    await supabase.from("events").delete().eq("id", id);
+    await supabaseClient.from("presences").delete().eq("event_id", id);
+    await supabaseClient.from("events").delete().eq("id", id);
 
     loadEvents();
     alert("Evento removido!");
 });
 
-/* ================ INICIAR APP ================ */
+/* INICIAR */
 loadUser();
 </script>
 </body>

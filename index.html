@@ -1,14 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Gerenciador de Treinos</title>
 
-<!-- SUPABASE (VERSÃO CORRETA — FUNCIONA NO BROWSER) -->
+<!-- FULLCALENDAR -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<style>
+    body {
+        margin: 0;
+        background: #111;
+        color: white;
+        font-family: Arial;
+    }
+
+    .hidden { display: none; }
+
+    #login-box, #main {
+        padding: 20px;
+    }
+
+    input, select, button {
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        border: none;
+    }
+
+    button {
+        background: #4CAF50;
+        color: white;
+        cursor: pointer;
+    }
+
+    #calendar {
+        background: white;
+        color: black;
+        padding: 10px;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    .box {
+        background: #222;
+        padding: 15px;
+        margin-top: 10px;
+        border-radius: 8px;
+    }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-box">
+    <h2>Login</h2>
+    <input id="login-name" placeholder="Digite seu nickname">
+    <button id="login-btn">Entrar</button>
+</div>
+
+<!-- PRINCIPAL -->
+<div id="main" class="hidden">
+    <h2>Bem-vindo, <span id="player-name"></span></h2>
+
+    <div class="box">
+        <h3>Criar Evento</h3>
+        <input id="event-title" placeholder="Título do evento"><br>
+        <input type="datetime-local" id="event-date"><br>
+        <button id="add-event-btn">Criar Evento</button>
+    </div>
+
+    <div class="box">
+        <h3>Confirmar Presença</h3>
+        <select id="presence-event-select"></select><br>
+        <button id="confirm-presence-btn">Confirmar Presença</button>
+        <ul id="presence-list"></ul>
+    </div>
+
+    <div class="box">
+        <h3>Remover Evento</h3>
+        <select id="remove-event-select"></select><br>
+        <button id="remove-event-btn" style="background:red;">Remover</button>
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
+<!-- SUPABASE (FUNCIONA NO BROWSER) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.js"></script>
-
-
 
 <script>
 /* ================ CONFIG SUPABASE ================ */
 const supabaseUrl = "https://omhpfutnbrjkctdsnqzm.supabase.co";
 const supabaseKey =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taHBmdXRuYnJqa2N0ZHNucXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1OTc5MDIsImV4cCI6MjA4MDE3MzkwMn0.ivNsJ21QVegUSgdc4aw9dyV85QJuEq7--bpkcKj5zVI";
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taHBmdXRuYnJqa2N0ZHNucXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1OTc5MDIsImV4cCI6MjA4MDE3MzkwMn0.ivNsJ21QVegUSgdc4aw9dyV85QJuEq7--bpkcKJ5zVI";
 
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -115,7 +201,6 @@ addEventBtn.addEventListener("click", async () => {
 
     eventTitleInput.value = "";
     eventDateInput.value = "";
-
     loadEvents();
 });
 
@@ -131,9 +216,9 @@ function updateEventSelectors() {
     }
 
     eventsLoaded.forEach(evt => {
-        const text = `${evt.title} — ${new Date(evt.start).toLocaleString()}`;
-        presenceSelect.innerHTML += `<option value="${evt.id}">${text}</option>`;
-        removeSelect.innerHTML += `<option value="${evt.id}">${text}</option>`;
+        const txt = `${evt.title} — ${new Date(evt.start).toLocaleString()}`;
+        presenceSelect.innerHTML += `<option value="${evt.id}">${txt}</option>`;
+        removeSelect.innerHTML += `<option value="${evt.id}">${txt}</option>`;
     });
 
     loadPresenceList();
@@ -143,14 +228,14 @@ function updateEventSelectors() {
 confirmPresenceBtn.addEventListener("click", async () => {
     const eventId = presenceSelect.value;
 
-    const { data: existing } = await supabaseClient
+    const { data: exist } = await supabaseClient
         .from("presence")
         .select("*")
         .eq("event_id", eventId)
         .eq("user_name", currentUser);
 
-    if (existing.length > 0)
-        return alert("Você já confirmou presença!");
+    if (exist.length > 0)
+        return alert("Você já confirmou!");
 
     const { error } = await supabaseClient
         .from("presence")
@@ -160,7 +245,7 @@ confirmPresenceBtn.addEventListener("click", async () => {
             date: new Date().toISOString()
         }]);
 
-    if (error) return alert("Erro ao confirmar presença: " + error.message);
+    if (error) return alert("Erro: " + error.message);
 
     loadPresenceList();
 });
@@ -194,9 +279,12 @@ removeBtn.addEventListener("click", async () => {
     await supabaseClient.from("presence").delete().eq("event_id", id);
     await supabaseClient.from("events").delete().eq("id", id);
 
-    loadEvents();
     alert("Evento removido!");
+    loadEvents();
 });
 
 loadUser();
 </script>
+
+</body>
+</html>
